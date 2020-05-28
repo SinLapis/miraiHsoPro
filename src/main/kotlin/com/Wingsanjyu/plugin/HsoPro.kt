@@ -33,14 +33,16 @@ object HsoPro : PluginBase() {
 
     private val config = loadConfig("setting.yml")
 
-    val Normal_Image_Trigger by config.withDefaultWriteSave { "setu" }
-    val R18_Image_Trigger by config.withDefaultWriteSave { "nsfw" }
+    //    val Normal_Image_Trigger by config.withDefaultWriteSave { "setu" }
+//    val R18_Image_Trigger by config.withDefaultWriteSave { "nsfw" }
     var Image_Resize_Max_Width_Height by config.withDefaultWriteSave { 1200 }
     var Anti_Detect by config.withDefaultWriteSave { false }
-    var CacheSize   by config.withDefaultWriteSave { 10 }
-    var WorkerSize   by config.withDefaultWriteSave { 2 }
+    var CacheSize by config.withDefaultWriteSave { 10 }
+    var WorkerSize by config.withDefaultWriteSave { 2 }
     var messageTemplate by config.withDefaultWriteSave { "{image}\n{tags}\n{url}" }
 
+    val Normal_Image_Trigger by config.withDefaultWriteSave { listOf("涩图", "色图", "瑟图") }
+    val R18_Image_Trigger by config.withDefaultWriteSave { listOf("不够涩", "不够色", "不够瑟") }
     val groupsAllowNormal by lazy {
         config.setIfAbsent("Allow_Normal_Image_Groups", listOf<Long>())
         config.getLongList("Allow_Normal_Image_Groups").toMutableList()
@@ -51,11 +53,11 @@ object HsoPro : PluginBase() {
     }
 
     private val rootFolder by lazy {
-        File(dataFolder.absolutePath).also{
+        File(dataFolder.absolutePath).also {
             it.mkdir()
-        }.absolutePath  + "/"
+        }.absolutePath + "/"
     }
-    private lateinit var triggerImage : BufferedImage
+    private lateinit var triggerImage: BufferedImage
     override fun onLoad() {
         try {
             images = getResourcesConfig("data.yml")
@@ -72,15 +74,15 @@ object HsoPro : PluginBase() {
         logger.info("Normal * " + normal.size)
         logger.info("R18    * " + r18.size)
         normalImageProvider = ImageFetcher(
-                normal, CacheSize, WorkerSize
+            normal, CacheSize, WorkerSize
         )
         r18ImageProvider = ImageFetcher(
-                r18, CacheSize, WorkerSize
+            r18, CacheSize, WorkerSize
         )
         val cacheFile = File(rootFolder + "pic.jpg")
-        try{
+        try {
             triggerImage = ImageIO.read(cacheFile)
-        }catch (e: Throwable){
+        } catch (e: Throwable) {
             HsoPro.logger.info("unknown Image type jpg")
         }
         registerCommand {
@@ -107,7 +109,7 @@ object HsoPro : PluginBase() {
                         HsoPro.groupsAllowNormal.add(operatingGroup)
                         this.sendMessage("以允许" + operatingGroup + "发送普通的图")
                     }
-                    "r18"    -> {
+                    "r18" -> {
                         HsoPro.groupsAllowR18.add(operatingGroup)
                         this.sendMessage("以允许" + operatingGroup + "发送R18的图")
                     }
@@ -120,14 +122,14 @@ object HsoPro : PluginBase() {
         }
 
         subscribeGroupMessages {
-            (contains(Normal_Image_Trigger)) {
+            (containsAny(*(Normal_Image_Trigger.toTypedArray()))) {
                 if (groupsAllowNormal.contains(this.group.id)) {
                     launch {
                         normalImageProvider.get().send(subject)
                     }
                 }
             }
-            (contains(R18_Image_Trigger)) {
+            (containsAny(*(R18_Image_Trigger.toTypedArray()))) {
                 if (groupsAllowR18.contains(this.group.id)) {
                     launch {
                         r18ImageProvider.get().send(subject)
@@ -138,9 +140,7 @@ object HsoPro : PluginBase() {
                 if (this.sender.isOperator()) {
                     HsoPro.groupsAllowNormal.add(this.group.id)
                     subject.sendMessage("以允许" + this.group.id + "发送普通的图")
-                }
-                else
-                {
+                } else {
                     subject.sendMessage("需要管理员及以上的权限")
                 }
             }
@@ -148,9 +148,7 @@ object HsoPro : PluginBase() {
                 if (this.sender.isOperator()) {
                     HsoPro.groupsAllowNormal.remove(this.group.id)
                     subject.sendMessage("不允许" + this.group.id + "发送普通的图")
-                }
-                else
-                {
+                } else {
                     subject.sendMessage("需要管理员及以上的权限")
                 }
             }
@@ -158,9 +156,7 @@ object HsoPro : PluginBase() {
                 if (this.sender.isOperator()) {
                     HsoPro.groupsAllowNormal.add(this.group.id)
                     subject.sendMessage("以允许" + this.group.id + "发送R18的图")
-                }
-                else
-                {
+                } else {
                     subject.sendMessage("需要管理员及以上的权限")
                 }
             }
@@ -168,18 +164,18 @@ object HsoPro : PluginBase() {
                 if (this.sender.isOperator()) {
                     HsoPro.groupsAllowNormal.remove(this.group.id)
                     subject.sendMessage("不允许" + this.group.id + "发送R18的图")
-                }
-                else
-                {
+                } else {
                     subject.sendMessage("需要管理员及以上的权限")
                 }
             }
             (contains("/hso help")){
-                subject.sendMessage("[/hso normal]     允许本群发送普通图片\n" +
-                        "[/hso r18]        允许本群发送r18图片\n" +
-                        "[/hso unnormal]        不允许本群发送普通图片\n" +
-                        "[/hso unr18]        不允许本群发送r18图片\n" +
-                        "更多设置请在插件配置文件中更改")
+                subject.sendMessage(
+                    "[/hso normal]     允许本群发送普通图片\n" +
+                            "[/hso r18]        允许本群发送r18图片\n" +
+                            "[/hso unnormal]        不允许本群发送普通图片\n" +
+                            "[/hso unr18]        不允许本群发送r18图片\n" +
+                            "更多设置请在插件配置文件中更改"
+                )
             }
 //            this.always {
 //                if(message.get(Image.Key) != null){

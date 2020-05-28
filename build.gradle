@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.WingsanJyu'
-version = '0.1.2'
+version = '0.1.2si'
 
 repositories {
     maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
